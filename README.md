@@ -12,6 +12,7 @@ def save_passwords():
     with open('passwords.json', 'w') as f:
         json.dump(passwords, f)
 ```
+
 First block of code reads the json file `passwords.json`, and saves the data as `passwords`
 Second block of code, we make a new function to save the passwords into the database
 
@@ -22,8 +23,10 @@ if typer.lower() == "sign up":
   if username in passwords:
     print("Username already exists.")
 ```
+
 We take input as `typer` and check if the user wants to sign up or login (`.lower()` makes sure that the input is registered in all lowercase so it can accept all cases of input)
 If the user wants to sign up, we ask for the username. We then check if the username is in the database, and, if so, disallow them to make it (we don't want rare cases of duplication, even with salting)
+
 
 ```py
   else:
@@ -33,6 +36,7 @@ If the user wants to sign up, we ask for the username. We then check if the user
         if len(password) < 4 or len(password) > 8:
             print("Password must be between 4 and 8 characters")
 ```
+
 If it doesn't exist, now we can ask for them to choose a password and confirm it. If the password matches the confirmation, we then check the length of the password to make sure it isn't too small
 
 ```py
@@ -43,12 +47,14 @@ If it doesn't exist, now we can ask for them to choose a password and confirm it
             save_passwords()
             print("Account created successfully!")
 ```
+
 If it isn't too small, we now generate a random 16-bit salt and a hash using the `SHA256` algorithm. We combine both to create a random and unique encryption string that is exclusive to a specific user, even if they choose the same password as someone else (although make sure not to use predictable passwords either way :) )
 
 ```py
     else:
         print("Passwords do not match.")
 ```
+
 Just a simple `else` statement after the confirm check to disallow them to create a new username if they failed to match their chosen passwords
 
 ```py
@@ -61,6 +67,7 @@ elif typer.lower() == "login":
     if password_hash == passwords[username]["password_hash"]:
         print("Login successful!")
 ```
+
 Checks back into our `typer` input to make a case for a login
 We take the username, confirm if it is in the database
 If it is, we find the salt string that is located within the user's data in the database
@@ -72,6 +79,7 @@ We combine the salt string with the hash of the password input to check if they 
   else:
     print("Username does not exist.")
 ```
+
 Final two `else` statements, one for the password input and the other for the username input
 
 
