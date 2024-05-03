@@ -75,3 +75,9 @@ elif typer.lower() == "login":
     print("Username does not exist.")
 ```
 #### Final two else statements, one for the password input and the other for the username input
+
+### Make sure that the JSON file already has a dictionary in it to prevent errors.
+#### When clearing out the database, make sure to add 2 curly braces to prevent any incorrect formatting
+```json
+{}
+```
