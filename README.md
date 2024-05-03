@@ -2,8 +2,13 @@
 
 ## How it works:
 
-## main.py
-```py
+The `main.py` file contains Python code responsible for handling the login and sign-up functionalities.
+
+```python
+import json
+import secrets
+import hashlib
+
 try:
     with open('passwords.json', 'r') as f:
         passwords = json.load(f)
@@ -14,71 +19,74 @@ def save_passwords():
     with open('passwords.json', 'w') as f:
         json.dump(passwords, f)
 ```
-#### First block of code reads the json file "passwords.json", and saves the data as "passwords"
-#### Second block of code, we make a new function to save the passwords into the database
 
-```py
+The first block of code reads the JSON file "passwords.json" and defines the `passwords` dictionary with its content. The second block defines a function `save_passwords()` to save the passwords into the database.
+
+```python
 typer = input("Login or sign up? ")
 if typer.lower() == "sign up":
-  username = input("Enter username: ")
-  if username in passwords:
-    print("Username already exists.")
+    username = input("Enter username: ")
+    if username in passwords:
+        print("Username already exists.")
 ```
-#### We take input as "typer" and check if the user wants to sign up or login (.lower() makes sure that the input is registered in all lowercase so it can accept all cases of input)
-#### If the user wants to sign up, we ask for the username. We then check if the username is in the database, and, if so, disallow them to make it (we don't want rare cases of duplication, even with salting)
 
-```py
-  else:
-    password = input("Enter password: ")
-    confirm = input("Confirm password: ")
-    if password == confirm:
-        if len(password) < 4 or len(password) > 8:
-            print("Password must be between 4 and 8 characters")
+The code takes input as `typer` to determine if the user wants to sign up or login. `.lower()` ensures that the input is registered in lowercase for case-insensitive comparison. If the user chooses to sign up, the code asks for a username. It then checks if the username already exists in the database and notifies the user accordingly to avoid duplication.
+
+```python
+    else:
+        password = input("Enter password: ")
+        confirm = input("Confirm password: ")
+        if password == confirm:
+            if len(password) < 4 or len(password) > 8:
+                print("Password must be between 4 and 8 characters")
 ```
-#### If it doesn't exist, now we can ask for them to choose a password and confirm it. If the password matches the confirmation, we then check the length of the password to make sure it isn't too small
 
-```py
+If the username does not exist, the code prompts the user to enter a password and confirm it. If the password matches the confirmation, it checks the length of the password to ensure it meets the required length.
+
+```python
+            else:
+                salt = secrets.token_hex(16)
+                password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
+                passwords[username] = {"password_hash": password_hash, "salt": salt}
+                save_passwords()
+                print("Account created successfully!")
+```
+
+If the password meets the length requirement, a random 16-bit salt is generated using `secrets.token_hex(16)`. The password and salt are combined and hashed using the SHA256 algorithm. The resulting hash and salt are stored in the `passwords` dictionary associated with the username. The `save_passwords()` function is called to update the database, and a success message is printed.
+
+```python
         else:
-            salt = secrets.token_hex(16)
-            password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
-            passwords[username] = {"password_hash": password_hash, "salt": salt}
-            save_passwords()
-            print("Account created successfully!")
+            print("Passwords do not match.")
 ```
-#### If it isn't too small, we now generate a random 16-bit salt and a hash using the SHA256 algorithm. We combine both to create a random and unique encryption string that is exclusive to a specific user, even if they choose the same password as someone else (although make sure not to use predictable passwords either way :) )
 
-```py
-    else:
-        print("Passwords do not match.")
-```
-#### Just a simple else statement after the confirm check to disallow them to create a new username if they failed to match their chosen passwords
+If the password and confirmation do not match, an error message is displayed.
 
-```py
+```python
 elif typer.lower() == "login":
-  username = input("Enter username: ")
-  if username in passwords:
-    password = input("Enter password: ")
-    salt = passwords[username]["salt"]
-    password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
-    if password_hash == passwords[username]["password_hash"]:
-        print("Login successful!")
+    username = input("Enter username: ")
+    if username in passwords:
+        password = input("Enter password: ")
+        salt = passwords[username]["salt"]
+        password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
+        if password_hash == passwords[username]["password_hash"]:
+            print("Login successful!")
 ```
-#### Checks back into our "typer" input to make a case for a login
-#### We take the username, confirm if it is in the database
-#### If it is, we find the salt string that is located within the user's data in the database
-#### We combine the salt string with the hash of the password input to check if they match the password hash stored int he database, and if they do, log them in
 
-```py
+For the login option, the code prompts the user to enter their username. If the username exists in the database, it asks for the password. It retrieves the salt stored with the username and hashes the entered password with the retrieved salt. If the resulting hash matches the stored password hash, a success message is displayed.
+
+```python
+        else:
+            print("Incorrect password.")
     else:
-        print("Incorrect password.")
-  else:
-    print("Username does not exist.")
+        print("Username does not exist.")
 ```
-#### Final two else statements, one for the password input and the other for the username input
 
+If the entered password does not match the stored hash, an error message is displayed. Final `else` statement checks if the username exists in the database, if not, an error message is printed
 
-## Make sure that the JSON file already has a dictionary in it to prevent errors.
-#### When clearing out the database, make sure to add 2 curly braces to prevent any incorrect formatting
+## Notes:
+
+Make sure that the JSON file already has a dictionary in it to prevent errors. When clearing out the database, make sure to add 2 curly braces `{}` to prevent any incorrect formatting.
+
 ```json
 {}
 ```
