@@ -1,90 +1,132 @@
 # LoginPage
 
-## How it works:
-```py
+## Overview
+
+This is a simple command-line-based user authentication system with sign-up and login functionality. Passwords are securely stored with unique salts and hashed using the SHA-256 algorithm.
+
+## Features
+
+- **Sign-up:** Create a new account with a username and password.
+- **Login:** Access an existing account by verifying the password.
+- **Secure password storage:** Passwords are salted and hashed before storage for security.
+- **Password constraints:** Passwords must be 8-16 characters long, and usernames must be 4-16 characters long.
+
+## How it Works
+
+### Data Storage
+
+The program reads from and writes to a JSON file (`passwords.json`) to store user credentials.
+
+```python
 try:
     with open('passwords.json', 'r') as f:
         passwords = json.load(f)
 except FileNotFoundError:
     passwords = {}
+```
 
+If `passwords.json` doesn't exist, an empty dictionary is initialized to store the usernames and hashed passwords.
+
+### Saving Passwords
+
+A helper function `save_passwords()` is used to write the updated user credentials to the JSON file.
+
+```python
 def save_passwords():
     with open('passwords.json', 'w') as f:
         json.dump(passwords, f)
 ```
 
-First block of code reads the json file `passwords.json`, and saves the data as `passwords`
-Second block of code, we make a new function to save the passwords into the database
+### Sign-up Process
 
-```py
-typer = input("Login or sign up? ")
-if typer.lower() == "sign up":
-  username = input("Enter username: ")
-  if username in passwords:
-    print("Username already exists.")
-```
+- The user is prompted to create a username and password.
+- Username requirements: 4-16 characters, must not already exist.
+- Password requirements: 8-16 characters, must be confirmed by entering it twice.
 
-We take input as `typer` and check if the user wants to sign up or login (`.lower()` makes sure that the input is registered in all lowercase so it can accept all cases of input)
-If the user wants to sign up, we ask for the username. We then check if the username is in the database, and, if so, disallow them to make it (we don't want rare cases of duplication, even with salting)
+```python
+def sign_up():
+    username = input("Enter username: ")
+    if username in passwords:
+        print("Username already exists.")
+        return
 
+    if not 4 <= len(username) <= 16:
+        print("Username must be between 4-16 characters")
+        return
 
-```py
-  else:
-    password = input("Enter password: ")
-    confirm = input("Confirm password: ")
-    if password == confirm:
-        if len(password) < 4 or len(password) > 8:
-            print("Password must be between 4 and 8 characters")
-```
-
-If it doesn't exist, now we can ask for them to choose a password and confirm it. If the password matches the confirmation, we then check the length of the password to make sure it isn't too small
-
-```py
-        else:
-            salt = secrets.token_hex(16)
-            password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
-            passwords[username] = {"password_hash": password_hash, "salt": salt}
-            save_passwords()
-            print("Account created successfully!")
-```
-
-If it isn't too small, we now generate a random 16-bit salt and a hash using the `SHA256` algorithm. We combine both to create a random and unique encryption string that is exclusive to a specific user, even if they choose the same password as someone else (although make sure not to use predictable passwords either way :) )
-
-```py
-    else:
+    password = getpass.getpass("Enter password: ")
+    confirm = getpass.getpass("Confirm password: ")
+    
+    if password != confirm:
         print("Passwords do not match.")
+        return
+
+    if len(password) < 8 or len(password) > 16:
+        print("Password must be between 8 and 16 characters.")
+        return
+
+    salt = secrets.token_hex(16)
+    password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
+    passwords[username] = {"password_hash": password_hash, "salt": salt}
+    save_passwords()
+    print("Account created successfully!")
 ```
 
-Just a simple `else` statement after the confirm check to disallow them to create a new username if they failed to match their chosen passwords
+1. If the username already exists, sign-up is denied.
+2. A unique 16-character salt is generated and combined with the password before being hashed using SHA-256. This ensures that even if two users have the same password, their stored credentials are different.
 
-```py
-elif typer.lower() == "login":
-  username = input("Enter username: ")
-  if username in passwords:
-    password = input("Enter password: ")
+### Login Process
+
+- The user is prompted to enter their username and password.
+- The stored salt for that username is retrieved and combined with the entered password before hashing.
+- The hashed value is compared to the stored password hash to verify the login.
+
+```python
+def login():
+    username = input("Enter username: ")
+    if username not in passwords:
+        print("Username does not exist.")
+        return
+
+    password = getpass.getpass("Enter password: ")
     salt = passwords[username]["salt"]
     password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
+
     if password_hash == passwords[username]["password_hash"]:
         print("Login successful!")
-```
-
-Checks back into our `typer` input to make a case for a login
-We take the username, confirm if it is in the database
-If it is, we find the salt string that is located within the user's data in the database
-We combine the salt string with the hash of the password input to check if they match the password hash stored int he database, and if they do, log them in
-
-```py
     else:
         print("Incorrect password.")
-  else:
-    print("Username does not exist.")
 ```
 
-Final two `else` statements, one for the password input and the other for the username input
+1. If the username does not exist, login fails.
+2. The input password is hashed with the associated salt, and the hash is compared to the one stored in `passwords.json`.
 
+### User Interface
+
+The program runs in a continuous loop, asking the user to either sign up or log in.
+
+```python
+def main():
+    while True:
+        typer = input("Login or sign up? ").lower()
+        if typer == "sign up":
+            sign_up()
+        elif typer == "login":
+            login()
+        else:
+            print("Invalid input, please type 'login' or 'sign up'.")
+```
 
 ## Notes
-When clearing out the database, make sure to add 2 curly braces to prevent any incorrect formatting
-```json
-{}
-```
+
+- Passwords are stored securely using both salt and hashing mechanisms.
+- The `passwords.json` file format:
+  ```json
+  {
+    "username": {
+      "password_hash": "<hashed_password>",
+      "salt": "<salt_value>"
+    }
+  }
+  ```
+- Ensure that when you reset or clear the `passwords.json` file, it contains an empty JSON object (`{}`) to avoid errors.
